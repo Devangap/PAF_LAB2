@@ -1,0 +1,87 @@
+#Question a
+CREATE TYPE Emp_t AS OBJECT(
+    eno number(4),
+    ename varchar2(15),
+    edept REF dept_t,
+    salary NUMBER(8,2)
+)/
+CREATE TYPE dept_t AS Object(
+    dno NUMBER(4),
+    dname VARCHAR2(12),
+    mgr REF Emp_t
+)/
+CREATE TYPE Proj_t AS OBJECT ( 
+  pno NUMBER(4), 
+  pname VARCHAR2(15), 
+  pdept REF Dept_t, 
+  budget NUMBER(10,2) 
+)/
+
+CREATE TABLE Dept of dept_t(
+    dno PRIMARY KEY
+)/
+CREATE TABLE Emp of Emp_t(
+    eno PRIMARY KEY,
+    edept REFERENCES Dept
+)/
+
+CREATE TABLE Proj OF Proj_t (
+  pno PRIMARY KEY,
+  pdept REFERENCES Dept
+)/
+
+
+ALTER TABLE Dept 
+  ADD CONSTRAINT fk_mgr FOREIGN KEY (mgr) 
+  REFERENCES Emp
+/
+
+#Question b
+Insert into Dept VALUES(dept_t(6,'SE',NULL));
+INSERT INTO Dept VALUES(dept_t(1, 'HR', NULL));
+INSERT INTO Dept VALUES(dept_t(2, 'IT', NULL));
+INSERT INTO Dept VALUES(dept_t(3, 'Finance', NULL));
+INSERT INTO Dept VALUES(dept_t(4, 'Marketing', (Select ref(e) from Emp e Where e.eno = 2)));
+INSERT INTO Dept VALUES(dept_t(5, 'Sales', NULL));
+    
+INSERT into Emp VALUES(emp_t(2,'baby',NULL,45000));
+INSERT into Emp VALUES(emp_t(4,'dev',(SELECT ref(d) from Dept d Where d.dno = 33),45000));
+INSERT into Emp VALUES(emp_t(5,'Hello',(Select ref(d) from Dept d Where d.dno = 6),50000));
+
+INSERT INTO Proj VALUES(proj_t(101, 'Project Alpha', (SELECT ref(d) FROM Dept d WHERE d.dno = 1), 120000));
+INSERT INTO Proj VALUES(proj_t(102, 'Project Beta', (SELECT ref(d) FROM Dept d WHERE d.dno = 2), 80000));
+INSERT INTO Proj VALUES(proj_t(107, 'Project ll', (SELECT ref(d) FROM Dept d WHERE d.dno = 4), 80000));
+INSERT INTO Proj VALUES(proj_t(109, 'Project theta', (SELECT ref(d) FROM Dept d WHERE d.dno = 2), 8000));
+
+#Question c
+select d.dno , d.mgr.salary , d.mgr.ename,d.mgr.salary
+from dept d ;
+
+#Question d
+select p.pname,p.pdept.mgr.ename
+FROM Proj p 
+Where p.budget > 50000;
+
+#Question e
+select d.dno,d.dname ,SUM(p.budget)
+From dept d join proj p on p.pdept = REF(d)
+group by d.dno,d.dname;
+
+#Question f 
+Select p.pdept.mgr.ename ,p.budget
+From proj p 
+where p.budget = (SELECT MAX(budget) FROM proj);
+
+#Question g
+SElect d.mgr.ename,SUM(p.budget)
+From dept d join proj p on p.pdept = REF(d)
+group by d.mgr.ename
+having SUM(p.budget) > 60000;
+
+#Question h
+SElect d.mgr.ename,SUM(budget) AS controlling_budget
+From dept d join proj p on p.pdept = REF(d)
+group by d.mgr.ename
+order by SUM(budget) DESC
+FETCH FIRST 1 ROWS ONLY;
+
